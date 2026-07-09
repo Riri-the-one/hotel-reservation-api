@@ -1,5 +1,5 @@
 import React from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import MainLayout from '../Layouts/MainLayout';
 
 export default function Home({ rooms }) {
@@ -43,9 +43,9 @@ export default function Home({ rooms }) {
                                             <span className="text-lg font-bold text-blue-600">
                                                 {price} € <span className="text-sm font-normal text-gray-500">/ nuit</span>
                                             </span>
-                                            <button className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition font-medium">
-                                                Réserver
-                                            </button>
+                                            <Link href={`/chambres/${room.id}`} className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition font-medium">
+                                                Voir et Réserver
+                                            </Link>
                                         </div>
                                     </div>
                                 </div>

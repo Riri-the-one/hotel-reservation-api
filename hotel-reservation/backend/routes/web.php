@@ -11,3 +11,10 @@ Route::get('/', function () {
         'rooms' => $rooms
     ]);
 });
+
+Route::get('/chambres/{id}', function ($id) {
+    $room = \App\Models\Room::with('roomType', 'roomType.tariffs')->findOrFail($id);
+    return Inertia::Inertia::render('RoomDetail', [
+        'room' => $room
+    ]);
+})->name('rooms.show');
