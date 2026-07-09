@@ -16,4 +16,10 @@ class RoomType extends Model
     {
         return $this->hasMany(Room::class);
     }
+
+    // Un type de chambre possède plusieurs tarifs
+    public function tariffs()
+    {
+        return $this->hasMany(Tariff::class);
+    }
 }
