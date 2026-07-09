@@ -63,3 +63,47 @@ Route::get('/chambres/{id}', function ($id) {
         'room' => $room
     ]);
 })->name('rooms.show');
+// Ajoute ceci tout à la fin de routes/web.php, après ta route /chambres/{id}
+
+Route::post('/reservations', function (Request $request) {
+    // 1. On valide les données reçues
+    $request->validate([
+        'room_id' => 'required|exists:rooms,id',
+        'check_in' => 'required|date|after_or_equal:today',
+        'check_out' => 'required|date|after:check_in',
+        'guest_name' => 'required|string|max:255',
+    ]);
+
+    // 2. On vérifie la disponibilité (sécurité backend)
+    $isOccupied = \App\Models\Reservation::where('room_id', $request->room_id)
+        ->where(function ($query) use ($request) {
+            $query->whereBetween('check_in', [$request->check_in, $request->check_out])
+                  ->orWhereBetween('check_out', [$request->check_in, $request->check_out])
+                  ->orWhere(function ($q) use ($request) {
+                      $q->where('check_in', '<=', $request->check_in)
+                        ->where('check_out', '>=', $request->check_out);
+                  });
+        })->exists();
+
+    if ($isOccupied) {
+        return back()->withErrors(['check_in' => 'Désolé, cette chambre vient d\'être réservée pour ces dates.']);
+    }
+
+    // 3. On calcule le prix total
+    $room = \App\Models\Room::find($request->room_id);
+    $checkIn = \Carbon\Carbon::parse($request->check_in);
+    $checkOut = \Carbon\Carbon::parse($request->check_out);
+    $nights = $checkIn->diffInDays($checkOut);
+
+    // 4. On crée la réservation en base
+    \App\Models\Reservation::create([
+        'room_id' => $room->id,
+        'check_in' => $request->check_in,
+        'check_out' => $request->check_out,
+        'guest_name' => $request->guest_name,
+        'total_price' => $room->price * $nights,
+    ]);
+
+    // 5. On redirige vers l'accueil
+    return redirect('/')->with('success', 'Votre réservation a bien été confirmée !');
+})->name('reservations.store');
