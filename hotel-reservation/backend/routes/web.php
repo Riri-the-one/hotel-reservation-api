@@ -25,6 +25,27 @@ Route::get('/', function (Request $request) {
         }
     }
 
+    // Filtre 3 : Disponibilité par dates (On exclut les chambres occupées)
+    if ($request->filled('arrival') && $request->filled('departure')) {
+        $arrival = $request->arrival;
+        $departure = $request->departure;
+
+        // Attention : Vérifie que tes colonnes s'appellent bien 'check_in' et 'check_out' dans ta migration reservations
+        $query->whereDoesntHave('reservations', function ($q) use ($arrival, $departure) {
+            $q->where(function ($subQuery) use ($arrival, $departure) {
+                // Cas 1 : La réservation existante commence pendant les dates demandées
+                $subQuery->whereBetween('check_in', [$arrival, $departure])
+                // Cas 2 : La réservation existante se termine pendant les dates demandées
+                         ->orWhereBetween('check_out', [$arrival, $departure])
+                // Cas 3 : La réservation existante englobe totalement les dates demandées
+                         ->orWhere(function ($sq) use ($arrival, $departure) {
+                             $sq->where('check_in', '<=', $arrival)
+                                ->where('check_out', '>=', $departure);
+                         });
+            });
+        });
+    }
+
     // On récupère les 6 résultats correspondants
     $rooms = $query->take(6)->get();
     
