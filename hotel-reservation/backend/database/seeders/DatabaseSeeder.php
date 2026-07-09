@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             RoomTypeSeeder::class,
             RoomSeeder::class,
             TariffSeeder::class,
+            ReservationSeeder::class, // On ajoute le Seeder des réservations ici
         ]);
 
         User::factory()->create([
