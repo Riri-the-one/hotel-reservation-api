@@ -1,29 +1,31 @@
 import React, { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import MainLayout from '../Layouts/MainLayout';
 
-export default function Home({ rooms }) {
-    // 1. Déclaration des états pour stocker les choix de l'utilisateur
+// On accepte maintenant "rooms" et "initialFilters" depuis Laravel
+export default function Home({ rooms, initialFilters = {} }) {
+    
+    // On initialise le formulaire avec les filtres existants (s'il y en a)
     const [filters, setFilters] = useState({
-        arrival: '',
-        departure: '',
-        type: '',
-        maxPrice: 300,
+        arrival: initialFilters.arrival || '',
+        departure: initialFilters.departure || '',
+        type: initialFilters.type || '',
+        maxPrice: initialFilters.maxPrice || 300,
     });
 
-    // 2. Fonction déclenchée au clic sur "Rechercher"
     const handleSearch = (e) => {
-        e.preventDefault(); // Empêche le rechargement de la page
-        // Pour l'instant on affiche juste les données, on connectera Laravel à l'étape d'après !
-        console.log("Filtres sélectionnés :", filters);
-        alert("Filtres capturés ! Regarde la console (F12). Prochaine étape : filtrer la base de données.");
+        e.preventDefault();
+        // Le router envoie les filtres à Laravel (qui va recharger la page avec les bons résultats)
+        router.get('/', filters, {
+            preserveState: true,
+            replace: true
+        });
     };
 
     return (
         <MainLayout>
             <Head title="Accueil" />
             
-            {/* En-tête (Hero) */}
             <div className="flex flex-col items-center text-center py-16">
                 <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
                     Trouvez la chambre idéale
@@ -33,11 +35,8 @@ export default function Home({ rooms }) {
                 </p>
             </div>
 
-            {/* --- NOUVEAU : Le bloc de recherche --- */}
             <div className="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-16 -mt-8 relative z-10">
                 <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    
-                    {/* Filtre Date d'arrivée */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Arrivée</label>
                         <input 
@@ -47,8 +46,6 @@ export default function Home({ rooms }) {
                             onChange={(e) => setFilters({...filters, arrival: e.target.value})}
                         />
                     </div>
-
-                    {/* Filtre Date de départ */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Départ</label>
                         <input 
@@ -58,8 +55,6 @@ export default function Home({ rooms }) {
                             onChange={(e) => setFilters({...filters, departure: e.target.value})}
                         />
                     </div>
-
-                    {/* Filtre Type de chambre */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                         <select 
@@ -73,8 +68,6 @@ export default function Home({ rooms }) {
                             <option value="loft">Loft Familial</option>
                         </select>
                     </div>
-
-                    {/* Bouton de validation */}
                     <div>
                         <button 
                             type="submit" 
@@ -85,7 +78,6 @@ export default function Home({ rooms }) {
                     </div>
                 </form>
 
-                {/* Filtre Prix (Slider) */}
                 <div className="mt-6 pt-4 border-t border-gray-100">
                     <div className="flex justify-between items-center mb-2">
                         <label className="text-sm font-medium text-gray-700">Prix maximum</label>
@@ -102,9 +94,7 @@ export default function Home({ rooms }) {
                     />
                 </div>
             </div>
-            {/* --- FIN DU BLOC RECHERCHE --- */}
 
-            {/* Section des chambres */}
             <div className="pb-12">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Nos Chambres Disponibles</h2>
                 
@@ -136,7 +126,7 @@ export default function Home({ rooms }) {
                     </div>
                 ) : (
                     <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
-                        <p className="text-gray-500">Aucune chambre n'est disponible.</p>
+                        <p className="text-gray-500">Aucune chambre ne correspond à vos critères de recherche.</p>
                     </div>
                 )}
             </div>
