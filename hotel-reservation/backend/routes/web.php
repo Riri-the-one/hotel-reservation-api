@@ -35,8 +35,8 @@ Route::get('/', function (Request $request) {
 });
 
 Route::get('/chambres/{id}', function ($id) {
-    // J'ai aussi nettoyé le \App\Models ici puisque "Room" est importé en haut
-    $room = Room::findOrFail($id);
+    // On ajoute le "with" ici aussi pour avoir accès au type et aux tarifs sur la page détail
+    $room = Room::with('roomType', 'roomType.tariffs')->findOrFail($id);
     
     return Inertia::render('RoomDetail', [
         'room' => $room
