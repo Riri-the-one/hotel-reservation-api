@@ -10,21 +10,22 @@ class Reservation extends Model
     use HasFactory;
 
     protected $fillable = [
+        'room_id',
+        'room_type_id', // NOUVEAU : On autorise ce champ
         'user_id',
-        'room_type_id',
+        'guest_name',
         'check_in',
         'check_out',
-        'total_price',
-        'status',
+        'total_price'
     ];
+
+    public function room()
+    {
+        return $this->belongsTo(Room::class);
+    }
 
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function roomType()
-    {
-        return $this->belongsTo(RoomType::class);
     }
 }

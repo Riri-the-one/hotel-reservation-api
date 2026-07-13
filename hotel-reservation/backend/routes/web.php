@@ -9,19 +9,21 @@ Route::get('/', function (Request $request) {
     // On initialise la requête en gardant tes relations (eager loading)
     $query = Room::with('roomType', 'roomType.tariffs');
 
-    // Filtre 1 : Le prix maximum
+    // Filtre 1 : Le prix maximum (CORRIGÉ : on interroge la relation roomType)
     if ($request->filled('maxPrice')) {
-        $query->where('price', '<=', $request->maxPrice);
+        $query->whereHas('roomType', function ($q) use ($request) {
+            $q->where('base_price', '<=', $request->maxPrice);
+        });
     }
 
-    // Filtre 2 : Le type de chambre
+    // Filtre 2 : Le type de chambre (CORRIGÉ : on interroge la relation roomType)
     if ($request->filled('type')) {
-        if ($request->type === 'standard') {
-            $query->where('name', 'like', '%Standard%');
-        } elseif ($request->type === 'suite') {
-            $query->where('name', 'like', '%Suite%');
-        } elseif ($request->type === 'loft') {
-            $query->where('name', 'like', '%Loft%');
+        $type = $request->type;
+        if (in_array($type, ['standard', 'suite', 'loft'])) {
+            $query->whereHas('roomType', function ($q) use ($type) {
+                // ucfirst met la première lettre en majuscule (ex: 'standard' -> 'Standard')
+                $q->where('name', 'like', '%' . ucfirst($type) . '%');
+            });
         }
     }
 
@@ -30,7 +32,6 @@ Route::get('/', function (Request $request) {
         $arrival = $request->arrival;
         $departure = $request->departure;
 
-        // Attention : Vérifie que tes colonnes s'appellent bien 'check_in' et 'check_out' dans ta migration reservations
         $query->whereDoesntHave('reservations', function ($q) use ($arrival, $departure) {
             $q->where(function ($subQuery) use ($arrival, $departure) {
                 // Cas 1 : La réservation existante commence pendant les dates demandées
@@ -52,12 +53,13 @@ Route::get('/', function (Request $request) {
     return Inertia::render('Home', [
         'rooms' => $rooms,
         'initialFilters' => $request->only(['arrival', 'departure', 'type', 'maxPrice']),
-        // NOUVEAU : On transmet le message flash de succès
+        // On transmet le message flash de succès
         'flash' => [
             'success' => session('success')
         ]
     ]);
 });
+
 Route::get('/chambres/{id}', function ($id) {
     // On ajoute le "with" ici aussi pour avoir accès au type et aux tarifs sur la page détail
     $room = Room::with('roomType', 'roomType.tariffs')->findOrFail($id);
@@ -66,7 +68,7 @@ Route::get('/chambres/{id}', function ($id) {
         'room' => $room
     ]);
 })->name('rooms.show');
-// Ajoute ceci tout à la fin de routes/web.php, après ta route /chambres/{id}
+
 
 Route::post('/reservations', function (Request $request) {
     // 1. On valide les données reçues
@@ -92,24 +94,27 @@ Route::post('/reservations', function (Request $request) {
         return back()->withErrors(['check_in' => 'Désolé, cette chambre vient d\'être réservée pour ces dates.']);
     }
 
-    // 3. On calcule le prix total
-    $room = \App\Models\Room::find($request->room_id);
+    // 3. On calcule le prix total (CORRIGÉ : on charge la relation roomType)
+    $room = \App\Models\Room::with('roomType')->find($request->room_id);
     $checkIn = \Carbon\Carbon::parse($request->check_in);
     $checkOut = \Carbon\Carbon::parse($request->check_out);
     $nights = $checkIn->diffInDays($checkOut);
 
-    // 4. On crée la réservation en base
+  // 4. On crée la réservation en base
     \App\Models\Reservation::create([
         'room_id' => $room->id,
+        'room_type_id' => $room->room_type_id, // NOUVEAU : On transmet le type de chambre
+        'user_id' => 1,
         'check_in' => $request->check_in,
         'check_out' => $request->check_out,
         'guest_name' => $request->guest_name,
-        'total_price' => $room->price * $nights,
+        'total_price' => $room->roomType->base_price * $nights, 
     ]);
 
     // 5. On redirige vers l'accueil
     return redirect('/')->with('success', 'Votre réservation a bien été confirmée !');
 })->name('reservations.store');
+
 Route::get('/admin/reservations', function () {
     $reservations = \App\Models\Reservation::with('room')
         ->orderBy('created_at', 'desc')

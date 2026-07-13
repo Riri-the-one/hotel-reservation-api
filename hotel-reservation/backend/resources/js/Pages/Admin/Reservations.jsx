@@ -30,7 +30,8 @@ export default function Reservations({ reservations }) {
                                         {reservation.guest_name}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {reservation.room ? reservation.room.name : 'Chambre introuvable'}
+                                        {/* CORRECTION ICI : Utilisation de room_number au lieu de name */}
+                                        {reservation.room ? `Chambre ${reservation.room.room_number}` : 'Chambre introuvable'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {reservation.check_in}
