@@ -51,10 +51,13 @@ Route::get('/', function (Request $request) {
     
     return Inertia::render('Home', [
         'rooms' => $rooms,
-        'initialFilters' => $request->only(['arrival', 'departure', 'type', 'maxPrice'])
+        'initialFilters' => $request->only(['arrival', 'departure', 'type', 'maxPrice']),
+        // NOUVEAU : On transmet le message flash de succès
+        'flash' => [
+            'success' => session('success')
+        ]
     ]);
 });
-
 Route::get('/chambres/{id}', function ($id) {
     // On ajoute le "with" ici aussi pour avoir accès au type et aux tarifs sur la page détail
     $room = Room::with('roomType', 'roomType.tariffs')->findOrFail($id);

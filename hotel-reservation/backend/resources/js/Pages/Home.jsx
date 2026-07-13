@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import MainLayout from '../Layouts/MainLayout';
 
 // On accepte maintenant "rooms" et "initialFilters" depuis Laravel
 export default function Home({ rooms, initialFilters = {} }) {
+    
+    // 1. On récupère les données flash depuis Inertia
+    const { flash } = usePage().props;
     
     // On initialise le formulaire avec les filtres existants (s'il y en a)
     const [filters, setFilters] = useState({
@@ -34,6 +37,13 @@ export default function Home({ rooms, initialFilters = {} }) {
                     Gérez vos réservations, vos clients et vos disponibilités en temps réel grâce à notre plateforme.
                 </p>
             </div>
+
+            {/* --- NOUVEAU : Message de succès --- */}
+            {flash && flash.success && (
+                <div className="max-w-4xl mx-auto mb-10 bg-green-50 border border-green-200 text-green-800 px-6 py-4 rounded-xl shadow-sm text-center font-medium animate-pulse">
+                     {flash.success}
+                </div>
+            )}
 
             <div className="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-16 -mt-8 relative z-10">
                 <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">

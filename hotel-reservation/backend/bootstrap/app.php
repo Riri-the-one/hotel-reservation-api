@@ -20,3 +20,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
+    Route::get('/admin/reservations', function () {
+    $reservations = \App\Models\Reservation::with('room')
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    return Inertia::render('Admin/Reservations', [
+        'reservations' => $reservations
+    ]);
+})->name('admin.reservations');
