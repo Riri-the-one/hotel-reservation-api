@@ -64,15 +64,26 @@ export default function RoomDetail({ room }) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-                    <div className="col-span-1 md:col-span-2 h-96 bg-gray-200 rounded-2xl flex items-center justify-center border border-gray-100">
-                        <span className="text-gray-400 font-medium">Photo Principale</span>
+                    {/* Image Principale Dynamique */}
+                    <div className="col-span-1 md:col-span-2 h-96 bg-gray-200 rounded-2xl flex items-center justify-center border border-gray-100 overflow-hidden relative">
+                        {room.image ? (
+                            <img 
+                                src={room.image.startsWith('http') ? room.image : `/storage/${room.image}`} 
+                                alt={`Photo de ${room.name}`} 
+                                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                            />
+                        ) : (
+                            <span className="text-gray-400 font-medium">Aucune image disponible</span>
+                        )}
                     </div>
+                    
+                    {/* Photos Secondaires */}
                     <div className="flex flex-col gap-4">
-                        <div className="h-44 bg-gray-200 rounded-2xl flex items-center justify-center border border-gray-100">
-                            <span className="text-gray-400 font-medium">Photo 2</span>
+                        <div className="h-44 bg-gray-200 rounded-2xl flex items-center justify-center border border-gray-100 overflow-hidden">
+                            <span className="text-gray-400 font-medium text-sm">Aperçu 2</span>
                         </div>
-                        <div className="h-44 bg-gray-200 rounded-2xl flex items-center justify-center border border-gray-100">
-                            <span className="text-gray-400 font-medium">Photo 3</span>
+                        <div className="h-44 bg-gray-200 rounded-2xl flex items-center justify-center border border-gray-100 overflow-hidden">
+                            <span className="text-gray-400 font-medium text-sm">Aperçu 3</span>
                         </div>
                     </div>
                 </div>

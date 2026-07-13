@@ -110,3 +110,12 @@ Route::post('/reservations', function (Request $request) {
     // 5. On redirige vers l'accueil
     return redirect('/')->with('success', 'Votre réservation a bien été confirmée !');
 })->name('reservations.store');
+Route::get('/admin/reservations', function () {
+    $reservations = \App\Models\Reservation::with('room')
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    return Inertia::render('Admin/Reservations', [
+        'reservations' => $reservations
+    ]);
+})->name('admin.reservations');
