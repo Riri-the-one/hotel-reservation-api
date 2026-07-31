@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import MainLayout from '../Layouts/MainLayout';
+import MainLayout from '@/Layouts/MainLayout';
 
-// On accepte maintenant "rooms" et "initialFilters" depuis Laravel
-export default function Home({ rooms, initialFilters = {} }) {
+export default function Home({ rooms }) {
     
-    // 1. On récupère les données flash depuis Inertia
     const { flash } = usePage().props;
     
-    // On initialise le formulaire avec les filtres existants (s'il y en a)
     const [filters, setFilters] = useState({
-        arrival: initialFilters.arrival || '',
-        departure: initialFilters.departure || '',
-        type: initialFilters.type || '',
-        maxPrice: initialFilters.maxPrice || 300,
+        arrival: '',
+        departure: '',
+        type: '',
+        maxPrice: 300,
     });
 
     const handleSearch = (e) => {
@@ -110,29 +107,35 @@ export default function Home({ rooms, initialFilters = {} }) {
                 
                 {rooms && rooms.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {rooms.map((room) => (
-                            <div key={room.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition flex flex-col">
-                                <div className="h-48 bg-gray-200 flex items-center justify-center">
-                                    <span className="text-gray-400">Image de la chambre</span>
-                                </div>
-                                <div className="p-5 flex flex-col flex-grow">
-                                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                                        {room.name || `Chambre #${room.id}`}
-                                    </h3>
-                                    <p className="text-gray-500 mb-4 line-clamp-2 flex-grow">
-                                        {room.description || "Une magnifique chambre équipée de tout le confort nécessaire."}
-                                    </p>
-                                    <div className="flex justify-between items-center pt-4 border-t border-gray-50">
-                                        <span className="text-lg font-bold text-blue-600">
-                                            {room.price || "---"} € <span className="text-sm font-normal text-gray-500">/ nuit</span>
-                                        </span>
-                                        <Link href={`/chambres/${room.id}`} className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition font-medium">
-                                            Voir et Réserver
-                                        </Link>
+                        {rooms.map((room) => {
+                            const roomType = room.room_type;
+                            const tariff = roomType?.tariffs?.[0];
+                            const price = tariff?.price || roomType?.base_price || "---";
+                            
+                            return (
+                                <div key={room.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition flex flex-col">
+                                    <div className="h-48 bg-gray-200 flex items-center justify-center">
+                                        <span className="text-gray-400">Image de la chambre</span>
+                                    </div>
+                                    <div className="p-5 flex flex-col flex-grow">
+                                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                                            {roomType?.name || `Chambre #${room.room_number || room.id}`}
+                                        </h3>
+                                        <p className="text-gray-500 mb-4 line-clamp-2 flex-grow">
+                                            {roomType?.description || "Une magnifique chambre équipée de tout le confort nécessaire."}
+                                        </p>
+                                        <div className="flex justify-between items-center pt-4 border-t border-gray-50">
+                                            <span className="text-lg font-bold text-blue-600">
+                                                {price} € <span className="text-sm font-normal text-gray-500">/ nuit</span>
+                                            </span>
+                                            <Link href={`/chambres/${room.id}`} className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition font-medium">
+                                                Voir et Réserver
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">

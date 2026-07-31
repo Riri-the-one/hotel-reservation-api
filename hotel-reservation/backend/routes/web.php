@@ -1,126 +1,58 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReservationController;
 use App\Models\Room;
+use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function (Request $request) {
-    // On initialise la requête en gardant tes relations (eager loading)
-    $query = Room::with('roomType', 'roomType.tariffs');
-
-    // Filtre 1 : Le prix maximum (CORRIGÉ : on interroge la relation roomType)
-    if ($request->filled('maxPrice')) {
-        $query->whereHas('roomType', function ($q) use ($request) {
-            $q->where('base_price', '<=', $request->maxPrice);
-        });
+// Home page with rooms listing
+Route::get('/', function () {
+    try {
+        $rooms = Room::with('roomType', 'roomType.tariffs')->take(6)->get();
+        
+        return Inertia::render('Home', [
+            'rooms' => $rooms,
+            'canLogin' => Route::has('login'),
+            'canRegister' => Route::has('register'),
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()], 500);
     }
-
-    // Filtre 2 : Le type de chambre (CORRIGÉ : on interroge la relation roomType)
-    if ($request->filled('type')) {
-        $type = $request->type;
-        if (in_array($type, ['standard', 'suite', 'loft'])) {
-            $query->whereHas('roomType', function ($q) use ($type) {
-                // ucfirst met la première lettre en majuscule (ex: 'standard' -> 'Standard')
-                $q->where('name', 'like', '%' . ucfirst($type) . '%');
-            });
-        }
-    }
-
-    // Filtre 3 : Disponibilité par dates (On exclut les chambres occupées)
-    if ($request->filled('arrival') && $request->filled('departure')) {
-        $arrival = $request->arrival;
-        $departure = $request->departure;
-
-        $query->whereDoesntHave('reservations', function ($q) use ($arrival, $departure) {
-            $q->where(function ($subQuery) use ($arrival, $departure) {
-                // Cas 1 : La réservation existante commence pendant les dates demandées
-                $subQuery->whereBetween('check_in', [$arrival, $departure])
-                // Cas 2 : La réservation existante se termine pendant les dates demandées
-                         ->orWhereBetween('check_out', [$arrival, $departure])
-                // Cas 3 : La réservation existante englobe totalement les dates demandées
-                         ->orWhere(function ($sq) use ($arrival, $departure) {
-                             $sq->where('check_in', '<=', $arrival)
-                                ->where('check_out', '>=', $departure);
-                         });
-            });
-        });
-    }
-
-    // On récupère les 6 résultats correspondants
-    $rooms = $query->take(6)->get();
-    
-    return Inertia::render('Home', [
-        'rooms' => $rooms,
-        'initialFilters' => $request->only(['arrival', 'departure', 'type', 'maxPrice']),
-        // On transmet le message flash de succès
-        'flash' => [
-            'success' => session('success')
-        ]
-    ]);
 });
 
+// Debug route to test Inertia response
+Route::get('/debug-inertia', function () {
+    return Inertia::render('Home', [])->toResponse(request())->getContent();
+});
+
+// Room detail page
 Route::get('/chambres/{id}', function ($id) {
-    // On ajoute le "with" ici aussi pour avoir accès au type et aux tarifs sur la page détail
     $room = Room::with('roomType', 'roomType.tariffs')->findOrFail($id);
-    
     return Inertia::render('RoomDetail', [
         'room' => $room
     ]);
 })->name('rooms.show');
 
+Route::get('/dashboard', function () {
+    return Inertia::render('Dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::post('/reservations', function (Request $request) {
-    // 1. On valide les données reçues
-    $request->validate([
-        'room_id' => 'required|exists:rooms,id',
-        'check_in' => 'required|date|after_or_equal:today',
-        'check_out' => 'required|date|after:check_in',
-        'guest_name' => 'required|string|max:255',
-    ]);
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // User reservations
+    Route::get('/profile/reservations', [ReservationController::class, 'userReservations'])->name('profile.reservations');
+    Route::post('/reservations', [ReservationController::class, 'store']);
+    Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel']);
+});
 
-    // 2. On vérifie la disponibilité (sécurité backend)
-    $isOccupied = \App\Models\Reservation::where('room_id', $request->room_id)
-        ->where(function ($query) use ($request) {
-            $query->whereBetween('check_in', [$request->check_in, $request->check_out])
-                  ->orWhereBetween('check_out', [$request->check_in, $request->check_out])
-                  ->orWhere(function ($q) use ($request) {
-                      $q->where('check_in', '<=', $request->check_in)
-                        ->where('check_out', '>=', $request->check_out);
-                  });
-        })->exists();
+// Reservation confirmation page
+Route::get('/reservations/{reservation}/confirmation', [ReservationController::class, 'confirmation'])
+    ->middleware('auth')
+    ->name('reservations.confirmation');
 
-    if ($isOccupied) {
-        return back()->withErrors(['check_in' => 'Désolé, cette chambre vient d\'être réservée pour ces dates.']);
-    }
-
-    // 3. On calcule le prix total (CORRIGÉ : on charge la relation roomType)
-    $room = \App\Models\Room::with('roomType')->find($request->room_id);
-    $checkIn = \Carbon\Carbon::parse($request->check_in);
-    $checkOut = \Carbon\Carbon::parse($request->check_out);
-    $nights = $checkIn->diffInDays($checkOut);
-
-  // 4. On crée la réservation en base
-    \App\Models\Reservation::create([
-        'room_id' => $room->id,
-        'room_type_id' => $room->room_type_id, // NOUVEAU : On transmet le type de chambre
-        'user_id' => 1,
-        'check_in' => $request->check_in,
-        'check_out' => $request->check_out,
-        'guest_name' => $request->guest_name,
-        'total_price' => $room->roomType->base_price * $nights, 
-    ]);
-
-    // 5. On redirige vers l'accueil
-    return redirect('/')->with('success', 'Votre réservation a bien été confirmée !');
-})->name('reservations.store');
-
-Route::get('/admin/reservations', function () {
-    $reservations = \App\Models\Reservation::with('room')
-        ->orderBy('created_at', 'desc')
-        ->get();
-
-    return Inertia::render('Admin/Reservations', [
-        'reservations' => $reservations
-    ]);
-})->name('admin.reservations');
+require __DIR__.'/auth.php';

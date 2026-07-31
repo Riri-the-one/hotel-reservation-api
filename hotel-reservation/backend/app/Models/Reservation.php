@@ -11,12 +11,13 @@ class Reservation extends Model
 
     protected $fillable = [
         'room_id',
-        'room_type_id', // NOUVEAU : On autorise ce champ
+        'room_type_id',
         'user_id',
         'guest_name',
         'check_in',
         'check_out',
-        'total_price'
+        'total_price',
+        'status'
     ];
 
     public function room()

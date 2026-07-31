@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Reservation;
 use App\Models\Tariff;
 use App\Models\RoomType;
+use App\Models\Room;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class ReservationController extends Controller
 {
@@ -21,15 +23,44 @@ class ReservationController extends Controller
         return response()->json($reservations);
     }
 
+    public function userReservations()
+    {
+        $reservations = Auth::user()->reservations()
+            ->with('room', 'room.roomType')
+            ->orderBy('check_in', 'desc')
+            ->get();
+
+        return Inertia::render('Profile/Reservations', [
+            'reservations' => $reservations
+        ]);
+    }
+
+    public function confirmation(Reservation $reservation)
+    {
+        if ($reservation->user_id !== Auth::id()) {
+            return redirect()->route('dashboard');
+        }
+
+        $reservation->load('room', 'room.roomType');
+
+        return Inertia::render('ReservationConfirmation', [
+            'reservation' => $reservation
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'room_type_id' => 'required|exists:room_types,id',
+            'room_id' => 'required|exists:rooms,id',
+            'guest_name' => 'required|string|max:255',
             'check_in' => 'required|date|after:today',
             'check_out' => 'required|date|after:check_in',
         ]);
 
-        $conflict = Reservation::where('room_type_id', $validated['room_type_id'])
+        $room = Room::findOrFail($validated['room_id']);
+        $roomTypeId = $room->room_type_id;
+
+        $conflict = Reservation::where('room_type_id', $roomTypeId)
             ->where('status', 'confirmed')
             ->where(function ($query) use ($validated) {
                 $query->whereBetween('check_in', [$validated['check_in'], $validated['check_out']])
@@ -41,10 +72,10 @@ class ReservationController extends Controller
             })->exists();
 
         if ($conflict) {
-            return response()->json(['message' => 'Chambre non disponible pour ces dates'], 422);
+            return back()->withErrors(['message' => 'Chambre non disponible pour ces dates']);
         }
 
-        $tariff = Tariff::where('room_type_id', $validated['room_type_id'])->first();
+        $tariff = Tariff::where('room_type_id', $roomTypeId)->first();
 
         $pricePerNight = $tariff ? $tariff->price : 0;
 
@@ -53,28 +84,26 @@ class ReservationController extends Controller
 
         $reservation = Reservation::create([
             'user_id' => Auth::id(),
-            'room_type_id' => $validated['room_type_id'],
+            'room_id' => $validated['room_id'],
+            'room_type_id' => $roomTypeId,
             'check_in' => $validated['check_in'],
             'check_out' => $validated['check_out'],
             'total_price' => $totalPrice,
             'status' => 'confirmed',
         ]);
 
-        return response()->json($reservation, 201);
+        return redirect()->route('reservations.confirmation', $reservation->id);
     }
 
     public function cancel(Reservation $reservation)
     {
         if ($reservation->user_id !== Auth::id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return back()->withErrors(['message' => 'Non autorisé']);
         }
 
         $reservation->update(['status' => 'cancelled']);
 
-        return response()->json([
-            'message' => 'Réservation annulée avec succès',
-            'reservation' => $reservation
-        ]);
+        return back()->with('success', 'Réservation annulée avec succès');
     }
 
     public function checkIn(Reservation $reservation)
