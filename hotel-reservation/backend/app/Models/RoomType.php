@@ -9,7 +9,7 @@ class RoomType extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
+    protected $fillable = ['name', 'description', 'capacity', 'base_price'];
 
     // Un type de chambre possède plusieurs chambres
     public function rooms()

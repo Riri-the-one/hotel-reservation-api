@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Room;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class RoomController extends Controller
@@ -42,7 +43,7 @@ class RoomController extends Controller
     {
         $validated = $request->validate([
             'room_type_id' => 'sometimes|required|exists:room_types,id',
-            'room_number' => 'sometimes|required|string|unique:rooms,room_number,' . $room->id,
+            'room_number' => 'sometimes|required|string|unique:rooms,room_number,'.$room->id,
             'status' => 'sometimes|required|in:disponible,maintenance',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
@@ -62,13 +63,17 @@ class RoomController extends Controller
 
     public function destroy(Room $room)
     {
-        // Supprime l'image associée avant de supprimer la chambre
-        if ($room->image) {
-            Storage::disk('public')->delete($room->image);
-        }
-        
-        $room->delete();
+        return DB::transaction(function () use ($room) {
+            $room = Room::lockForUpdate()->findOrFail($room->id);
+            abort_if($room->reservations()->exists(), 409, 'A room with booking history cannot be deleted.');
+            // Supprime l'image associée avant de supprimer la chambre
+            if ($room->image) {
+                Storage::disk('public')->delete($room->image);
+            }
 
-        return response()->json(['message' => 'Chambre supprimée avec succès']);
+            $room->delete();
+
+            return response()->json(['message' => 'Chambre supprimée avec succès']);
+        });
     }
 }

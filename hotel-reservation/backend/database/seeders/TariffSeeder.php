@@ -33,7 +33,7 @@ class TariffSeeder extends Seeder
                 'end_date' => now()->addDays(365),
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]
+            ],
         ]);
     }
 }

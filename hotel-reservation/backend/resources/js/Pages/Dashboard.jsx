@@ -1,26 +1,5 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
-
+import { Head, Link } from '@inertiajs/react';
+import MainLayout from '@/Layouts/MainLayout';
 export default function Dashboard() {
-    return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Dashboard
-                </h2>
-            }
-        >
-            <Head title="Dashboard" />
-
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            You're logged in!
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </AuthenticatedLayout>
-    );
+    return <MainLayout><Head title="Mon espace" /><section className="rounded-2xl bg-white p-8"><p className="text-xs uppercase tracking-widest text-amber-800">Bienvenue</p><h1 className="mt-3 text-3xl font-semibold">Préparez votre prochain séjour</h1><div className="mt-8 flex flex-wrap gap-4"><Link href="/" className="rounded-lg bg-slate-900 px-5 py-3 text-white">Explorer les chambres</Link><Link href="/profile/reservations" className="rounded-lg border border-stone-300 px-5 py-3">Mes réservations</Link></div></section></MainLayout>;
 }

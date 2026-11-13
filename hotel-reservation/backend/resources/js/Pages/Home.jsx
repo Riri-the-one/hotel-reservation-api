@@ -1,148 +1,33 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 
-export default function Home({ rooms }) {
-    
-    const { flash } = usePage().props;
-    
-    const [filters, setFilters] = useState({
-        arrival: '',
-        departure: '',
-        type: '',
-        maxPrice: 300,
-    });
-
-    const handleSearch = (e) => {
-        e.preventDefault();
-        // Le router envoie les filtres à Laravel (qui va recharger la page avec les bons résultats)
-        router.get('/', filters, {
-            preserveState: true,
-            replace: true
-        });
-    };
-
-    return (
-        <MainLayout>
-            <Head title="Accueil" />
-            
-            <div className="flex flex-col items-center text-center py-16">
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                    Trouvez la chambre idéale
-                </h1>
-                <p className="text-gray-600 text-lg mb-8 max-w-2xl">
-                    Gérez vos réservations, vos clients et vos disponibilités en temps réel grâce à notre plateforme.
-                </p>
-            </div>
-
-            {/* --- NOUVEAU : Message de succès --- */}
-            {flash && flash.success && (
-                <div className="max-w-4xl mx-auto mb-10 bg-green-50 border border-green-200 text-green-800 px-6 py-4 rounded-xl shadow-sm text-center font-medium animate-pulse">
-                     {flash.success}
-                </div>
-            )}
-
-            <div className="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-16 -mt-8 relative z-10">
-                <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Arrivée</label>
-                        <input 
-                            type="date" 
-                            className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                            value={filters.arrival}
-                            onChange={(e) => setFilters({...filters, arrival: e.target.value})}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Départ</label>
-                        <input 
-                            type="date" 
-                            className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                            value={filters.departure}
-                            onChange={(e) => setFilters({...filters, departure: e.target.value})}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                        <select 
-                            className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-                            value={filters.type}
-                            onChange={(e) => setFilters({...filters, type: e.target.value})}
-                        >
-                            <option value="">Tous les types</option>
-                            <option value="standard">Standard</option>
-                            <option value="suite">Suite Premium</option>
-                            <option value="loft">Loft Familial</option>
-                        </select>
-                    </div>
-                    <div>
-                        <button 
-                            type="submit" 
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg transition shadow-md"
-                        >
-                            Rechercher
-                        </button>
-                    </div>
-                </form>
-
-                <div className="mt-6 pt-4 border-t border-gray-100">
-                    <div className="flex justify-between items-center mb-2">
-                        <label className="text-sm font-medium text-gray-700">Prix maximum</label>
-                        <span className="font-bold text-blue-600">{filters.maxPrice} €</span>
-                    </div>
-                    <input 
-                        type="range" 
-                        min="50" 
-                        max="500" 
-                        step="10"
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                        value={filters.maxPrice}
-                        onChange={(e) => setFilters({...filters, maxPrice: e.target.value})}
-                    />
-                </div>
-            </div>
-
-            <div className="pb-12">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Nos Chambres Disponibles</h2>
-                
-                {rooms && rooms.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {rooms.map((room) => {
-                            const roomType = room.room_type;
-                            const tariff = roomType?.tariffs?.[0];
-                            const price = tariff?.price || roomType?.base_price || "---";
-                            
-                            return (
-                                <div key={room.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition flex flex-col">
-                                    <div className="h-48 bg-gray-200 flex items-center justify-center">
-                                        <span className="text-gray-400">Image de la chambre</span>
-                                    </div>
-                                    <div className="p-5 flex flex-col flex-grow">
-                                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                                            {roomType?.name || `Chambre #${room.room_number || room.id}`}
-                                        </h3>
-                                        <p className="text-gray-500 mb-4 line-clamp-2 flex-grow">
-                                            {roomType?.description || "Une magnifique chambre équipée de tout le confort nécessaire."}
-                                        </p>
-                                        <div className="flex justify-between items-center pt-4 border-t border-gray-50">
-                                            <span className="text-lg font-bold text-blue-600">
-                                                {price} € <span className="text-sm font-normal text-gray-500">/ nuit</span>
-                                            </span>
-                                            <Link href={`/chambres/${room.id}`} className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition font-medium">
-                                                Voir et Réserver
-                                            </Link>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
-                        <p className="text-gray-500">Aucune chambre ne correspond à vos critères de recherche.</p>
-                    </div>
-                )}
-            </div>
-        </MainLayout>
-    );
+export default function Home({ rooms, roomTypes, filters = {} }) {
+    const { errors } = usePage().props;
+    const [search, setSearch] = useState({ arrival: filters.arrival || '', departure: filters.departure || '', type: filters.type || '', maxPrice: filters.maxPrice || '' });
+    const [loading, setLoading] = useState(false);
+    const update = e => setSearch({ ...search, [e.target.name]: e.target.value });
+    return <MainLayout>
+        <Head title="Chambres & séjours" />
+        <section className="rounded-3xl bg-slate-900 px-6 py-12 text-stone-50 sm:px-12 sm:py-20">
+            <p className="mb-4 text-xs uppercase tracking-[0.2em] text-amber-200">Prenez le temps de vous retrouver</p>
+            <h1 className="max-w-2xl text-4xl font-semibold leading-tight sm:text-6xl">Votre prochain séjour commence ici.</h1>
+            <p className="mt-6 max-w-xl text-stone-300">Explorez nos chambres et trouvez les disponibilités pour votre séjour.</p>
+            <p className="mt-6 text-xs text-stone-400">Collection fictive · Application de démonstration</p>
+        </section>
+        <form className="relative mx-auto -mt-6 mb-12 grid max-w-5xl gap-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-lg sm:grid-cols-2 lg:grid-cols-5"
+            onSubmit={e => { e.preventDefault(); router.get('/', search, { preserveState: true, onStart: () => setLoading(true), onFinish: () => setLoading(false) }); }}>
+            <label className="text-sm font-medium">Arrivée<input name="arrival" type="date" value={search.arrival} onChange={update} className="mt-2 w-full rounded-lg border-stone-300" /></label>
+            <label className="text-sm font-medium">Départ<input name="departure" type="date" min={search.arrival} value={search.departure} onChange={update} className="mt-2 w-full rounded-lg border-stone-300" /></label>
+            <label className="text-sm font-medium">Type<select name="type" value={search.type} onChange={update} className="mt-2 w-full rounded-lg border-stone-300"><option value="">Tous les types</option>{roomTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
+            <label className="text-sm font-medium">Prix de base max. (€)<input name="maxPrice" type="number" min="0" placeholder="Sans limite" value={search.maxPrice} onChange={update} className="mt-2 w-full rounded-lg border-stone-300" /></label>
+            <button disabled={loading} className="self-end rounded-lg bg-amber-700 px-4 py-3 font-medium text-white disabled:opacity-50">{loading ? 'Recherche…' : 'Rechercher'}</button>
+            {Object.values(errors).map((error, i) => <p role="alert" key={i} className="text-sm text-red-700 sm:col-span-2 lg:col-span-5">{error}</p>)}
+        </form>
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs uppercase tracking-widest text-amber-800">Notre collection</p><h2 className="mt-2 text-3xl font-semibold">Un séjour à votre image</h2></div><p className="text-sm text-stone-500">{rooms.length} chambre(s)</p></div>
+        {rooms.length ? <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{rooms.map(room => <article key={room.id} className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
+            {room.image ? <img className="h-52 w-full object-cover" src={room.image.startsWith('http') ? room.image : '/storage/' + room.image} alt={'Chambre ' + room.room_number} /> : <div className="flex h-52 items-center justify-center bg-gradient-to-br from-stone-200 to-amber-100 text-5xl text-stone-500" aria-label="Illustration typographique">{room.room_number}</div>}
+            <div className="p-6"><p className="text-xs uppercase tracking-wider text-stone-500">Chambre {room.room_number} · {room.room_type.capacity} personne(s)</p><h3 className="mt-2 text-xl font-semibold">{room.room_type.name}</h3><p className="mt-3 min-h-12 text-sm text-stone-600">{room.room_type.description}</p><div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 pt-4"><p><strong>{Number(room.room_type.base_price).toFixed(2)} €</strong><span className="text-xs text-stone-500"> / nuit, base</span></p><Link className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white" href={'/chambres/' + room.id}>Voir la chambre</Link></div></div>
+        </article>)}</div> : <div role="status" className="rounded-2xl border border-dashed border-stone-300 bg-white p-12 text-center"><h3 className="text-xl font-semibold">Aucune chambre disponible</h3><p className="mt-3 text-stone-600">Essayez d’autres dates ou élargissez vos critères.</p><Link href="/" className="mt-4 inline-block underline">Réinitialiser les filtres</Link></div>}
+    </MainLayout>;
 }

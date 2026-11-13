@@ -51,6 +51,8 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
+        abort_if($user->reservations()->whereIn('status', ['confirmed', 'checked_in'])->exists(), 409, 'Resolve active reservations before deleting your account.');
+
         Auth::logout();
 
         $user->delete();

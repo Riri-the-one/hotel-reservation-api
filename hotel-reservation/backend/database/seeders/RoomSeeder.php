@@ -37,7 +37,7 @@ class RoomSeeder extends Seeder
                 'status' => 'disponible',
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]
+            ],
         ]);
     }
 }

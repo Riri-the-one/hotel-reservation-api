@@ -18,12 +18,13 @@ class TariffController extends Controller
     {
         $validated = $request->validate([
             'room_type_id' => 'required|exists:room_types,id',
-            'price' => 'required|numeric|min:0',
+            'price' => 'required|decimal:0,2|gt:0|max:999999.99',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
 
         $tariff = Tariff::create($validated);
+
         return response()->json($tariff, 201);
     }
 
@@ -36,13 +37,15 @@ class TariffController extends Controller
     // 4. Modifier un tarif (Update)
     public function update(Request $request, Tariff $tariff)
     {
+        $request->merge(array_merge($tariff->only(['price', 'start_date', 'end_date']), $request->only(['price', 'start_date', 'end_date'])));
         $validated = $request->validate([
-            'price' => 'numeric|min:0',
+            'price' => 'required|decimal:0,2|gt:0|max:999999.99',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
 
         $tariff->update($validated);
+
         return response()->json($tariff, 200);
     }
 
@@ -50,6 +53,7 @@ class TariffController extends Controller
     public function destroy(Tariff $tariff)
     {
         $tariff->delete();
+
         return response()->json(['message' => 'Tarif supprimé avec succès'], 200);
     }
 }

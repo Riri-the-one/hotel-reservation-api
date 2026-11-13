@@ -3,11 +3,11 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Laravel\Sanctum\HasApiTokens;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
@@ -47,11 +47,10 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-    
+
     // Un utilisateur peut avoir plusieurs réservations
     public function reservations()
     {
         return $this->hasMany(Reservation::class);
     }
-    
 }
