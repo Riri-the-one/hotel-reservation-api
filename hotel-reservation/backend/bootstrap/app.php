@@ -1,9 +1,12 @@
 <?php
 
+use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use App\Http\Middleware\HandleInertiaRequests; // <-- Ajoute cet import en haut
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,23 +17,17 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
-        ]);
-
-        $middleware->web(append: [
-            HandleInertiaRequests::class, // <-- Ajoute cette ligne ici
+            HandleInertiaRequests::class,
+            AddLinkHeadersForPreloadedAssets::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
-    })->create();
-    Route::get('/admin/reservations', function () {
-    $reservations = \App\Models\Reservation::with('room')
-        ->orderBy('created_at', 'desc')
-        ->get();
+        $exceptions->respond(function (Response $response) {
+            if (! request()->expectsJson() && in_array($response->getStatusCode(), [403, 404, 409, 500, 503])) {
+                return Inertia::render('Error', ['status' => $response->getStatusCode()])
+                    ->toResponse(request())->setStatusCode($response->getStatusCode());
+            }
 
-    return Inertia::render('Admin/Reservations', [
-        'reservations' => $reservations
-    ]);
-})->name('admin.reservations');
+            return $response;
+        });
+    })->create();

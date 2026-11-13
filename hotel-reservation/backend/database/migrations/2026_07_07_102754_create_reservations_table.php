@@ -10,10 +10,10 @@ return new class extends Migration
     {
         Schema::create('reservations', function (Blueprint $table) {
             $table->id();
-            
+
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('room_type_id')->constrained('room_types')->onDelete('cascade');
-            
+
             $table->date('check_in');
             $table->date('check_out');
             $table->decimal('total_price', 8, 2);

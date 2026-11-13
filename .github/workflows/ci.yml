@@ -1,0 +1,41 @@
+name: Application checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hotel-reservation/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: bcmath, pdo_sqlite
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: hotel-reservation/backend/package-lock.json
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer validate --strict
+      - run: php vendor/bin/pint --test
+      - run: php vendor/bin/phpunit
+      - run: php tests/Concurrency/booking-race.php
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Start isolated demo and verify booking journey
+        run: |
+          php scripts/demo.php > /tmp/hotel-demo.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/ > /dev/null; then break; fi
+            sleep 1
+          done
+          npx playwright test

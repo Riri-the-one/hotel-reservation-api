@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('rooms', function (Blueprint $table) {
             $table->id();
-            
+
             // Voici la Clé Étrangère (FK) qui relie cette chambre à un type dans la table room_types
             $table->foreignId('room_type_id')->constrained('room_types')->onDelete('cascade');
-            
+
             $table->string('room_number')->unique(); // Le numéro de la chambre, 'unique' empêche les doublons
             $table->enum('status', ['disponible', 'maintenance'])->default('disponible'); // Le statut par défaut
             $table->timestamps();

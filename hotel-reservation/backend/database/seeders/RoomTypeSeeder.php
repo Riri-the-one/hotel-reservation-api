@@ -30,7 +30,7 @@ class RoomTypeSeeder extends Seeder
                 'capacity' => 4,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]
+            ],
         ]);
     }
 }

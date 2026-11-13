@@ -1,59 +1,14 @@
-import React from 'react';
-import { Head } from '@inertiajs/react';
-import MainLayout from '../../Layouts/MainLayout';
-
+import { Head, router } from '@inertiajs/react';
+import MainLayout from '@/Layouts/MainLayout';
 export default function Reservations({ reservations }) {
-    return (
-        <MainLayout>
-            <Head title="Gestion des Réservations" />
-
-            <div className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold text-gray-900">Toutes les réservations</h1>
-                </div>
-
-                <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg border border-gray-200">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chambre</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Arrivée</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Départ</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix Total</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {reservations.map((reservation) => (
-                                <tr key={reservation.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {reservation.guest_name}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {/* CORRECTION ICI : Utilisation de room_number au lieu de name */}
-                                        {reservation.room ? `Chambre ${reservation.room.room_number}` : 'Chambre introuvable'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {reservation.check_in}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {reservation.check_out}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                                        {reservation.total_price} €
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    
-                    {reservations.length === 0 && (
-                        <div className="p-6 text-center text-gray-500">
-                            Aucune réservation pour le moment.
-                        </div>
-                    )}
-                </div>
+    return <MainLayout><Head title="Gestion des réservations" /><h1 className="mb-8 text-3xl font-semibold">Gestion des réservations</h1>
+        <div className="space-y-4">{reservations.map(r => <article key={r.id} className="rounded-xl border border-stone-200 bg-white p-5">
+            <h2 className="font-semibold">#{r.id} · Chambre {r.room?.room_number || 'archivée'} · {r.guest_name}</h2>
+            <p className="my-3 text-sm text-stone-600">{r.check_in} → {r.check_out} · {r.total_price} € · {r.status}</p>
+            <div className="flex flex-wrap gap-4">
+                {r.status === 'confirmed' && <button className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white" onClick={() => router.post('/admin/reservations/' + r.id + '/check-in')}>Check-in</button>}
+                {r.status === 'checked_in' && <button className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white" onClick={() => router.post('/admin/reservations/' + r.id + '/check-out')}>Check-out</button>}
             </div>
-        </MainLayout>
-    );
+        </article>)}{!reservations.length && <p>Aucune réservation.</p>}</div>
+    </MainLayout>;
 }

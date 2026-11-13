@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Reservation;
 use App\Models\RoomType;
 use Illuminate\Http\Request;
 
@@ -20,6 +21,7 @@ class RoomTypeController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'capacity' => 'required|integer|min:1',
+            'base_price' => 'required|decimal:0,2|gt:0|max:999999.99',
         ]);
 
         $roomType = RoomType::create($validated);
@@ -40,6 +42,7 @@ class RoomTypeController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'capacity' => 'sometimes|required|integer|min:1',
+            'base_price' => 'sometimes|required|decimal:0,2|gt:0|max:999999.99',
         ]);
 
         $roomType->update($validated);
@@ -50,6 +53,7 @@ class RoomTypeController extends Controller
     // Supprimer un type de chambre
     public function destroy(RoomType $roomType)
     {
+        abort_if($roomType->rooms()->exists() || Reservation::where('room_type_id', $roomType->id)->exists(), 409, 'A room type in use cannot be deleted.');
         $roomType->delete();
 
         return response()->json(['message' => 'Type de chambre supprimé avec succès']);

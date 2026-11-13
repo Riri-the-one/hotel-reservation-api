@@ -1,0 +1,13 @@
+.npm-cache/
+.composer-cache/
+node_modules/
+vendor/
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite-*
+playwright-report/
+test-results/
+hotel-reservation/backend/public/build/
+hotel-reservation/backend/public/hot
